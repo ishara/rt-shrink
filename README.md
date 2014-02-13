@@ -19,7 +19,8 @@ example use:
 
 <code>
 		// false means we want to delete individual files
-		Shrinker m = new Shrinker(false)
+		Shrinker m = new Shrinker(false);
+		
 		// load list of all classes from rt.jar
 		m.loadRT("/openjdk/jre/lib/rt.jar");
 		
