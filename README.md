@@ -18,8 +18,8 @@ Then we can use this log file to gather list of all classes that were loaded at 
 example use:
 
 <code>
-		Shrinker m = new Shrinker(false); // false means we want to delete individual files
-		
+		// false means we want to delete individual files
+		Shrinker m = new Shrinker(false)
 		// load list of all classes from rt.jar
 		m.loadRT("/openjdk/jre/lib/rt.jar");
 		
