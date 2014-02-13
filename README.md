@@ -17,7 +17,8 @@ Then we can use this log file to gather list of all classes that were loaded at 
 
 example use:
 
-<code>
+<code>	// dummy comment
+		
 		// false means we want to delete individual files
 		Shrinker m = new Shrinker(false);
 		
