@@ -9,35 +9,15 @@ import net.keraj.pkg.Packages.*;
 
 import sun.misc.Unsafe;
 
-public class SlimMain {
-	
-	// change it depending on where you java executable is
-	public static final String JAVA_RT = "C:\\openjdk7\\jre\\lib\\rt.jar";
-	
-	/** If set to true, only completely unused packages will be removed,
-	 * otherwise all classes that were not used will be removed */
-	private static boolean PACKAGES_ONLY = true;
-	
-	private static boolean COMPRESS = true;
+public class Shrinker {
 
-	public static void main(String[] args) throws Exception {
-		SlimMain m = new SlimMain();
-		m.loadRT(JAVA_RT);
-		
-		m.readLog(new File("output.log"));
-		
-		// we asume that everything from under java.lang should be included
-		m.markUsed("java.lang");
-		
-		m.printUnusedPackages();
-		
-		m.process(new File(JAVA_RT), new File("rt.jar"));
-	}
-	
-	
+	private boolean packages;
 	Packages pkgs = new Packages();
 	
-	SlimMain() throws IOException {
+	/** @param package_only If set to true, then only unused packages will be removed, otherwise individual unused files are removed.
+	 * A package is "unused" only when all of its files and subpackages are unused. */
+	public Shrinker(boolean packagesOnly) throws IOException {
+		this.packages = packagesOnly;
 	}
 	
 	public void loadRT(String path) throws IOException {
@@ -46,8 +26,9 @@ public class SlimMain {
 	}
 	
 	/** Reads program output log and searches for lines starting with "[Loaded " */
-	public void readLog(File log) throws IOException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(log)));
+	public void readLog(String logpath) throws IOException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(logpath)));
+		int marked = 0;
 		try {
 			String line;
 	        while((line = br.readLine()) != null) {
@@ -59,22 +40,24 @@ public class SlimMain {
 		    		Klass k = pkgs.klasses.get(classname);
 		    		if(k!=null) {
 		        		k.markUsed();
+		        		marked++;
 		    		}
 	        	}
 	        }
 		} finally {
 			br.close();
 		}
+		System.out.println("Marked " + marked + " classes from " + logpath);
 	}
 	
 	/**
 	 * copies jar contents, excluding unused classes or packages
 	 */
-	private void process(File rt, File file) throws Exception {
+	public void process(String rt, String file, boolean compress) throws Exception {
 	    ZipInputStream zin = new ZipInputStream(new FileInputStream(rt), Charset.forName("UTF8"));
 	    ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(file), Charset.forName("UTF8"));
 		zout.setLevel(9);
-		zout.setMethod(COMPRESS ? ZipOutputStream.DEFLATED : ZipOutputStream.STORED);
+		zout.setMethod(compress ? ZipOutputStream.DEFLATED : ZipOutputStream.STORED);
 	  
 	    int removed = 0;
 	    for(;;) {
@@ -85,7 +68,7 @@ public class SlimMain {
 	    		continue;
 	    	String path = ent.getName();
 	    	
-	    	if(PACKAGES_ONLY) {
+	    	if(packages) {
 		    	String pkg = path.substring(0, path.lastIndexOf("/")).replaceAll("/", "\\.");
 		    	Package p = pkgs.getPackage(pkg);
 		    	if(!p.used) {
@@ -127,8 +110,12 @@ public class SlimMain {
 	 * should be used after loading logs and before processing rt.jar */
 	public void markUsed(String name) {
 		Package p = pkgs.getPackage(name);
-		if(p!=null) p.markUsedChildren();
-		else System.err.println("Warning: no package named " + name);
+		if(p!=null) {
+			p.markUsedChildren();
+			System.out.println("required: " + name);
+		}
+		else
+			System.err.println("Warning: no package named " + name);
 	}
 	
 	private void pipe(InputStream in, OutputStream out) throws IOException {
