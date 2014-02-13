@@ -15,7 +15,8 @@ JVM will now output all the classes it loads at runtime int stdout, which will b
 
 Then we can use this log file to gather list of all classes that were loaded at runtime. After that, we can remove all classes from rt.jar that were never used at runtime.
 
-example use:  
+example use:
+
 <code>
 		Shrinker m = new Shrinker(false); // false means we want to delete individual files
 		
